@@ -8,6 +8,7 @@ import {
   languageName,
   versionHref,
 } from '../../../lib/posts';
+import Reactions from '../../../components/Reactions.astro';
 import { ui } from '../../../lib/ui';
 
 export async function getStaticPaths() {
@@ -25,6 +26,10 @@ const { version, siblings } = Astro.props;
 const { Content, headings } = await render(version);
 const { title, date } = version.data;
 const t = ui(version.lang);
+
+const reactionsRepo = import.meta.env.PUBLIC_REACTIONS_REPO;
+const reactionIssues = JSON.parse(import.meta.env.PUBLIC_REACTION_ISSUES || '{}');
+const reactionsIssue = reactionsRepo ? reactionIssues[version.slug] : undefined;
 const { newer, older, others } = await getNeighbors(version.slug, version.lang);
 
 const outline = headings.filter((h) => h.depth === 2 || h.depth === 3);
@@ -65,7 +70,13 @@ const sections = outline.reduce<{ h: (typeof outline)[number]; children: typeof 
         </details>
       )
     }
-    <article class="post">
+    <article
+      class="post"
+      data-lang={version.lang}
+      data-reactions-repo={reactionsIssue ? reactionsRepo : undefined}
+      data-reactions-issue={reactionsIssue}
+      data-owner={import.meta.env.PUBLIC_OWNER_LOGIN}
+    >
       <h1>{title}</h1>
       <p class="post-meta">
         <time datetime={date.toISOString()}>{formatDate(date, version.lang)}</time>
@@ -88,6 +99,7 @@ const sections = outline.reduce<{ h: (typeof outline)[number]; children: typeof 
       <div class="prose">
         <Content />
       </div>
+      {reactionsIssue && <Reactions lang={version.lang} />}
 
       {
         (newer || older) && (

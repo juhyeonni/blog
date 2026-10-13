@@ -1,0 +1,244 @@
+---
+import { ui } from '../lib/ui';
+
+interface Props {
+  lang: string;
+}
+
+const t = ui(Astro.props.lang);
+---
+
+<div
+  id="reactions-i18n"
+  hidden
+  data-add={t.reactAdd}
+  data-count={t.reactCount}
+  data-title={t.reactTitle}
+  data-empty={t.reactEmpty}
+  data-placeholder={t.reactPlaceholder}
+  data-submit={t.reactSubmit}
+  data-delete={t.reactDelete}
+  data-close={t.reactClose}
+  data-login={t.reactLogin}
+  data-failed={t.reactFailed}
+  data-login-button={t.loginWithGitHub}
+>
+</div>
+
+<script>
+  import { MAX_TEXT, blockHash, canDelete, encode, groupByBlock, parse, type Reaction } from '../lib/reactions';
+  import { getToken, loadUser } from '../lib/session';
+
+  const article = document.querySelector<HTMLElement>('article[data-reactions-issue]');
+  const prose = article?.querySelector<HTMLElement>('.prose');
+  const s = document.getElementById('reactions-i18n')?.dataset;
+  if (article && prose && s) start(article, prose, s);
+
+  function el<K extends keyof HTMLElementTagNameMap>(tag: K, className = '', text = ''): HTMLElementTagNameMap[K] {
+    const node = document.createElement(tag);
+    if (className) node.className = className;
+    if (text) node.textContent = text;
+    return node;
+  }
+
+  function start(article: HTMLElement, prose: HTMLElement, s: DOMStringMap) {
+    const repo = article.dataset.reactionsRepo!;
+    const issue = article.dataset.reactionsIssue!;
+    const owner = article.dataset.owner ?? '';
+    const lang = article.dataset.lang!;
+    const api = `https://api.github.com/repos/${repo}/issues`;
+
+    const blocks = [...prose.querySelectorAll<HTMLElement>('p, li, h2, h3, blockquote')].filter(
+      (node) => !node.querySelector('p, li, ul, ol, pre, blockquote'),
+    );
+    const anchors = blocks.map((node, block) => ({ block, hash: blockHash(node.textContent ?? '') }));
+
+    let reactions: Reaction[] = [];
+    let current: number | null = null;
+    let opener: HTMLElement | null = null;
+
+    const panel = el('section', 'r-panel');
+    panel.hidden = true;
+    panel.setAttribute('role', 'group');
+    panel.setAttribute('aria-label', s.title!);
+    prose.append(panel);
+
+    const counts: HTMLButtonElement[] = [];
+    blocks.forEach((node, i) => {
+      node.classList.add('reactable');
+      const count = el('button', 'r-count');
+      count.type = 'button';
+      count.hidden = true;
+      count.setAttribute('aria-label', s.count!);
+      count.addEventListener('click', () => openPanel(i, count));
+      const addButton = el('button', 'r-add', '+');
+      addButton.type = 'button';
+      addButton.setAttribute('aria-label', s.add!);
+      addButton.addEventListener('click', () => openPanel(i, addButton));
+      node.append(count, addButton);
+      counts.push(count);
+    });
+
+    function render() {
+      const grouped = groupByBlock(reactions, lang, anchors);
+      blocks.forEach((node, i) => {
+        const n = grouped.get(i)?.length ?? 0;
+        node.classList.toggle('reacted', n > 0);
+        counts[i].hidden = n === 0;
+        counts[i].textContent = String(n);
+      });
+    }
+
+    function authHeaders(): HeadersInit {
+      return {
+        Authorization: `Bearer ${getToken()}`,
+        Accept: 'application/vnd.github+json',
+        'Content-Type': 'application/json',
+      };
+    }
+
+    async function remove(reaction: Reaction): Promise<boolean> {
+      const response = await fetch(`${api}/comments/${reaction.id}`, { method: 'DELETE', headers: authHeaders() });
+      return response.status === 204;
+    }
+
+    async function add(index: number, text: string): Promise<Reaction | null> {
+      const body = encode({ lang, ...anchors[index] }, text);
+      const response = await fetch(`${api}/${issue}/comments`, {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify({ body }),
+      });
+      return response.ok ? parse(await response.json()) : null;
+    }
+
+    async function renderPanel() {
+      if (current === null) return;
+      const index = current;
+      const me = await loadUser();
+      if (current !== index) return;
+
+      const head = el('div', 'r-head');
+      head.append(el('b', '', s.title!));
+      const close = el('button', 'r-close', s.close!);
+      close.type = 'button';
+      close.addEventListener('click', closePanel);
+      head.append(close);
+
+      const list = el('ul', 'r-list');
+      const items = groupByBlock(reactions, lang, anchors).get(index) ?? [];
+      for (const reaction of items) {
+        const row = el('li', 'r-item');
+        if (reaction.avatar) {
+          const image = new Image(20, 20);
+          image.alt = '';
+          image.src = reaction.avatar;
+          row.append(image);
+        }
+        const body = el('span', 'r-body');
+        body.append(el('b', '', reaction.login), document.createTextNode(` ${reaction.text}`));
+        row.append(body);
+        if (canDelete(reaction, me?.login ?? null, owner)) {
+          const del = el('button', 'r-delete', s.delete!);
+          del.type = 'button';
+          del.addEventListener('click', async () => {
+            if (await remove(reaction)) {
+              reactions = reactions.filter((r) => r.id !== reaction.id);
+              render();
+              renderPanel();
+            } else status.textContent = s.failed!;
+          });
+          row.append(del);
+        }
+        list.append(row);
+      }
+
+      const status = el('p', 'r-status');
+      status.setAttribute('role', 'status');
+      const foot = el('div', 'r-foot');
+      if (items.length === 0) foot.append(el('p', 'r-empty', s.empty!));
+
+      if (me) {
+        const form = el('form', 'r-form');
+        const input = el('input');
+        input.type = 'text';
+        input.maxLength = MAX_TEXT;
+        input.placeholder = s.placeholder!;
+        input.setAttribute('aria-label', s.placeholder!);
+        input.autocomplete = 'off';
+        const submit = el('button', 'text-button', s.submit!);
+        submit.type = 'submit';
+        form.append(input, submit);
+        form.addEventListener('submit', async (event) => {
+          event.preventDefault();
+          if (!input.value.trim()) return;
+          submit.disabled = true;
+          status.textContent = '';
+          const created = await add(index, input.value);
+          submit.disabled = false;
+          if (!created) return void (status.textContent = s.failed!);
+          reactions = [...reactions, created];
+          render();
+          await renderPanel();
+          panel.querySelector('input')?.focus();
+        });
+        foot.append(form);
+      } else {
+        foot.append(el('p', 'r-empty', s.login!));
+        const loginButton = document.getElementById('login-button');
+        if (loginButton) {
+          const go = el('button', 'text-button', s.loginButton!);
+          go.type = 'button';
+          go.addEventListener('click', () => loginButton.click());
+          foot.append(go);
+        }
+      }
+
+      panel.replaceChildren(head, list, foot, status);
+      const block = blocks[index].getBoundingClientRect();
+      panel.style.top = `${block.bottom - prose.getBoundingClientRect().top + 8}px`;
+      panel.hidden = false;
+    }
+
+    async function openPanel(index: number, trigger: HTMLElement) {
+      current = index;
+      opener = trigger;
+      await renderPanel();
+      (panel.querySelector('input') ?? panel.querySelector('button'))?.focus();
+    }
+
+    function closePanel() {
+      panel.hidden = true;
+      current = null;
+      opener?.focus();
+    }
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && current !== null) closePanel();
+    });
+    document.addEventListener('click', (event) => {
+      const target = event.target as Node;
+      const inside = panel.contains(target) || (target as HTMLElement).closest?.('.r-add, .r-count');
+      if (current !== null && !inside) {
+        panel.hidden = true;
+        current = null;
+      }
+    });
+
+    // ponytail: first 300 comments only; page further or bake at build time if a post passes that
+    (async () => {
+      const found: Reaction[] = [];
+      for (let page = 1; page <= 3; page++) {
+        const response = await fetch(`${api}/${issue}/comments?per_page=100&page=${page}`, {
+          headers: { Accept: 'application/vnd.github+json' },
+        });
+        if (!response.ok) break;
+        const batch = (await response.json()) as Parameters<typeof parse>[0][];
+        found.push(...batch.map(parse).filter((r): r is Reaction => r !== null));
+        if (batch.length < 100) break;
+      }
+      reactions = found;
+      render();
+    })().catch(() => {});
+  }
+</script>
