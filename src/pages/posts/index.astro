@@ -1,0 +1,36 @@
+---
+import Base from '../../layouts/Base.astro';
+import { formatDate, getPosts, languageName, versionHref } from '../../lib/posts';
+
+const posts = await getPosts();
+---
+
+<Base title="글 목록 | blog">
+  <h1>글 목록</h1>
+  <ul class="post-list">
+    {
+      posts.map(({ primary, versions }) => (
+        <li>
+          <a class="post-title" lang={primary.lang} href={versionHref(primary)}>
+            {primary.data.title}
+          </a>
+          <div class="post-meta">
+            <time datetime={primary.data.date.toISOString()}>
+              {formatDate(primary.data.date, primary.lang)}
+            </time>
+            <span class="langs">
+              {versions.map((v) => (
+                <a lang={v.lang} href={versionHref(v)}>
+                  {languageName(v.lang)}
+                </a>
+              ))}
+            </span>
+          </div>
+          {primary.data.description && (
+            <p lang={primary.lang}>{primary.data.description}</p>
+          )}
+        </li>
+      ))
+    }
+  </ul>
+</Base>

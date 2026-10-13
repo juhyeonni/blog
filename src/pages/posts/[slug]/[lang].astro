@@ -1,0 +1,47 @@
+---
+import { render } from 'astro:content';
+import Base from '../../../layouts/Base.astro';
+import { formatDate, getVersions, languageName, versionHref } from '../../../lib/posts';
+
+export async function getStaticPaths() {
+  const versions = await getVersions();
+  return versions.map((version) => ({
+    params: { slug: version.slug, lang: version.lang },
+    props: {
+      version,
+      siblings: versions.filter((v) => v.slug === version.slug),
+    },
+  }));
+}
+
+const { version, siblings } = Astro.props;
+const { Content } = await render(version);
+const { title, date } = version.data;
+---
+
+<Base title={`${title} | blog`} lang={version.lang}>
+  <article>
+    <h1>{title}</h1>
+    <p class="post-meta">
+      <time datetime={date.toISOString()}>{formatDate(date, version.lang)}</time>
+    </p>
+    {
+      siblings.length > 1 && (
+        <nav class="langs" aria-label="Languages">
+          {siblings.map((v) =>
+            v.lang === version.lang ? (
+              <span lang={v.lang} aria-current="true">{languageName(v.lang)}</span>
+            ) : (
+              <a lang={v.lang} hreflang={v.lang} href={versionHref(v)}>
+                {languageName(v.lang)}
+              </a>
+            ),
+          )}
+        </nav>
+      )
+    }
+    <div class="prose">
+      <Content />
+    </div>
+  </article>
+</Base>
