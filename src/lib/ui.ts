@@ -10,6 +10,10 @@ const strings = {
     older: '이전 글',
     newer: '다음 글',
     more: '다른 글',
+    search: '검색',
+    searchPlaceholder: '글 검색',
+    searchEmpty: '찾는 글이 없어요. 다른 단어로 찾아보세요.',
+    searchHint: '↑↓ 이동 · Enter 열기 · Esc 닫기',
   },
   ja: {
     site: 'サイト',
@@ -22,6 +26,10 @@ const strings = {
     older: '前の記事',
     newer: '次の記事',
     more: '他の記事',
+    search: '検索',
+    searchPlaceholder: '記事を検索',
+    searchEmpty: '見つかりませんでした。別の言葉をお試しください。',
+    searchHint: '↑↓ 移動 · Enter 開く · Esc 閉じる',
   },
 } as const;
 

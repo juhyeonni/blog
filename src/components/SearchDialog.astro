@@ -1,0 +1,147 @@
+---
+import { href } from '../lib/posts';
+import { ui } from '../lib/ui';
+
+interface Props {
+  lang: string;
+}
+
+const t = ui(Astro.props.lang);
+---
+
+<dialog
+  id="search-dialog"
+  class="search"
+  aria-label={t.search}
+  data-index={href('/search.json')}
+  data-empty={t.searchEmpty}
+>
+  <input
+    id="search-input"
+    type="search"
+    role="combobox"
+    aria-expanded="false"
+    aria-controls="search-results"
+    aria-autocomplete="list"
+    aria-label={t.search}
+    placeholder={t.searchPlaceholder}
+    autocomplete="off"
+    spellcheck="false"
+  />
+  <ul id="search-results" role="listbox" aria-label={t.search}></ul>
+  <p id="search-status" class="search-status" role="status"></p>
+  <p class="search-hint">{t.searchHint}</p>
+</dialog>
+
+<script>
+  import { search, type Entry } from '../lib/search';
+
+  const dialog = document.getElementById('search-dialog') as HTMLDialogElement;
+  const input = document.getElementById('search-input') as HTMLInputElement;
+  const list = document.getElementById('search-results') as HTMLUListElement;
+  const status = document.getElementById('search-status') as HTMLElement;
+  const opener = document.getElementById('search-open');
+
+  let index: Entry[] | null = null;
+  let links: HTMLAnchorElement[] = [];
+  let active = -1;
+
+  async function loadIndex() {
+    if (index) return;
+    const response = await fetch(dialog.dataset.index!);
+    index = (await response.json()) as Entry[];
+  }
+
+  function select(next: number) {
+    if (links.length === 0) return;
+    active = (next + links.length) % links.length;
+    links.forEach((link, i) => {
+      const on = i === active;
+      link.parentElement!.setAttribute('aria-selected', String(on));
+      if (on) {
+        input.setAttribute('aria-activedescendant', link.parentElement!.id);
+        link.scrollIntoView({ block: 'nearest' });
+      }
+    });
+  }
+
+  function render() {
+    list.replaceChildren();
+    links = [];
+    active = -1;
+    input.removeAttribute('aria-activedescendant');
+
+    const query = input.value;
+    const hits = index ? search(index, query) : [];
+    input.setAttribute('aria-expanded', String(hits.length > 0));
+    status.textContent = query.trim() && index && hits.length === 0 ? dialog.dataset.empty! : '';
+
+    hits.forEach(({ entry, snippet }, i) => {
+      const item = document.createElement('li');
+      item.id = `search-result-${i}`;
+      item.setAttribute('role', 'option');
+      item.setAttribute('aria-selected', 'false');
+
+      const link = document.createElement('a');
+      link.href = entry.url;
+      link.lang = entry.lang;
+
+      const title = document.createElement('span');
+      title.className = 'search-title';
+      title.textContent = entry.title;
+
+      const meta = document.createElement('span');
+      meta.className = 'search-meta';
+      const language = new Intl.DisplayNames([entry.lang], { type: 'language' }).of(entry.lang);
+      meta.textContent = `${language} · ${snippet}`;
+
+      link.append(title, meta);
+      item.append(link);
+      list.append(item);
+      links.push(link);
+    });
+    select(0);
+  }
+
+  function open() {
+    if (dialog.open) return;
+    dialog.showModal();
+    input.select();
+    loadIndex().then(render);
+  }
+
+  opener?.addEventListener('click', open);
+  input.addEventListener('input', render);
+
+  dialog.addEventListener('click', (event) => {
+    if (event.target === dialog) dialog.close();
+  });
+
+  dialog.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      dialog.close();
+    } else if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      select(active + 1);
+    } else if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      select(active - 1);
+    } else if (event.key === 'Enter' && links[active]) {
+      event.preventDefault();
+      links[active].click();
+    }
+  });
+
+  document.addEventListener('keydown', (event) => {
+    const target = event.target as HTMLElement;
+    const typing = target.closest('input, textarea, select, [contenteditable]') !== null;
+    if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+      event.preventDefault();
+      open();
+    } else if (event.key === '/' && !typing && !event.metaKey && !event.ctrlKey) {
+      event.preventDefault();
+      open();
+    }
+  });
+</script>
