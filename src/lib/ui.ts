@@ -14,6 +14,13 @@ const strings = {
     searchPlaceholder: '글 검색',
     searchEmpty: '찾는 글이 없어요. 다른 단어로 찾아보세요.',
     searchHint: '↑↓ 이동 · Enter 열기 · Esc 닫기',
+    login: '로그인',
+    loginWithGitHub: 'GitHub으로 로그인',
+    logout: '로그아웃',
+    account: '계정',
+    signingIn: '로그인하는 중…',
+    loginFailed: '로그인하지 못했어요. 다시 시도해 주세요.',
+    backHome: '홈으로',
   },
   ja: {
     site: 'サイト',
@@ -30,6 +37,13 @@ const strings = {
     searchPlaceholder: '記事を検索',
     searchEmpty: '見つかりませんでした。別の言葉をお試しください。',
     searchHint: '↑↓ 移動 · Enter 開く · Esc 閉じる',
+    login: 'ログイン',
+    loginWithGitHub: 'GitHubでログイン',
+    logout: 'ログアウト',
+    account: 'アカウント',
+    signingIn: 'ログイン中…',
+    loginFailed: 'ログインできませんでした。もう一度お試しください。',
+    backHome: 'ホームへ',
   },
 } as const;
 

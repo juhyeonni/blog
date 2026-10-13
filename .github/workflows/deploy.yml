@@ -16,6 +16,9 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: withastro/action@v6
+        env:
+          PUBLIC_GITHUB_CLIENT_ID: ${{ vars.PUBLIC_GITHUB_CLIENT_ID }}
+          PUBLIC_AUTH_URL: ${{ vars.PUBLIC_AUTH_URL }}
 
   deploy:
     needs: build

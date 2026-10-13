@@ -1,6 +1,7 @@
 ---
 import 'pretendard-jp/dist/web/variable/pretendardvariable-jp-dynamic-subset.css';
 import '../styles/global.css';
+import LoginControl from '../components/LoginControl.astro';
 import SearchDialog from '../components/SearchDialog.astro';
 import { href } from '../lib/posts';
 import { ui } from '../lib/ui';
@@ -51,6 +52,7 @@ const t = ui(lang);
               <path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5Z"></path>
             </svg>
           </button>
+          <LoginControl lang={lang} />
         </div>
       </div>
     </header>
