@@ -1,6 +1,7 @@
 ---
 import { href } from '../lib/posts';
 import { ui } from '../lib/ui';
+import SemanticSearch from './SemanticSearch.astro';
 
 interface Props {
   lang: string;
@@ -30,6 +31,7 @@ const t = ui(Astro.props.lang);
   />
   <ul id="search-results" role="listbox" aria-label={t.search}></ul>
   <p id="search-status" class="search-status" role="status"></p>
+  <SemanticSearch lang={Astro.props.lang} />
   <p class="search-hint">{t.searchHint}</p>
 </dialog>
 
@@ -101,6 +103,11 @@ const t = ui(Astro.props.lang);
       links.push(link);
     });
     select(0);
+    dialog.dispatchEvent(
+      new CustomEvent('search:render', {
+        detail: { query, shown: hits.map((h) => `${h.entry.slug}/${h.entry.lang}`), index },
+      }),
+    );
   }
 
   function open() {

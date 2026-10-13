@@ -5,3 +5,5 @@ dist/
 .astro/
 .dev.vars
 .wrangler/
+public/embeddings.json
+.cache/
