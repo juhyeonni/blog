@@ -1,0 +1,34 @@
+---
+import Base from '../../layouts/Base.astro';
+import { href } from '../../lib/posts';
+import { ui } from '../../lib/ui';
+
+const t = ui('ko');
+---
+
+<Base title={`${t.signingIn} | blog`}>
+  <h1 id="auth-title">{t.signingIn}</h1>
+  <p id="auth-error" hidden>{t.loginFailed} <a href={href('/')}>{t.backHome}</a></p>
+
+  <script>
+    import { STATE_KEY, TOKEN_KEY, resolveCallback } from '../../lib/auth';
+
+    const title = document.getElementById('auth-title') as HTMLElement;
+    const error = document.getElementById('auth-error') as HTMLElement;
+    const home = error.querySelector('a')!.getAttribute('href')!;
+
+    const stored = sessionStorage.getItem(STATE_KEY);
+    sessionStorage.removeItem(STATE_KEY);
+    const pending = stored ? JSON.parse(stored) : null;
+
+    const result = resolveCallback(location.hash, pending, home);
+    if (result.ok) {
+      localStorage.setItem(TOKEN_KEY, result.token);
+      location.replace(result.returnTo);
+    } else {
+      history.replaceState(null, '', location.pathname);
+      title.hidden = true;
+      error.hidden = false;
+    }
+  </script>
+</Base>

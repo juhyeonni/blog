@@ -1,0 +1,8 @@
+name = "blog-auth"
+main = "src/index.ts"
+compatibility_date = "2026-10-01"
+
+[vars]
+GITHUB_CLIENT_ID = "REPLACE_WITH_CLIENT_ID"
+SITE_ORIGIN = "https://juhyeonni.github.io"
+SITE_BASE = "/blog"

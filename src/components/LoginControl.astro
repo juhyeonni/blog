@@ -1,0 +1,90 @@
+---
+import { ui } from '../lib/ui';
+
+interface Props {
+  lang: string;
+}
+
+const t = ui(Astro.props.lang);
+const clientId = import.meta.env.PUBLIC_GITHUB_CLIENT_ID;
+const authUrl = import.meta.env.PUBLIC_AUTH_URL;
+const enabled = Boolean(clientId && authUrl);
+---
+
+{
+  enabled && (
+    <div id="login" class="login" data-client-id={clientId} data-auth-url={authUrl}>
+      <button id="login-button" class="text-button" type="button" aria-label={t.loginWithGitHub}>
+        {t.login}
+      </button>
+      <details id="account" class="account" hidden>
+        <summary aria-label={t.account}>
+          <span id="account-avatar" class="avatar"></span>
+        </summary>
+        <div class="account-menu">
+          <span id="account-name"></span>
+          <button id="logout-button" class="text-button" type="button">
+            {t.logout}
+          </button>
+        </div>
+      </details>
+    </div>
+  )
+}
+
+<script>
+  import { STATE_KEY, TOKEN_KEY, authorizeUrl, randomState } from '../lib/auth';
+
+  const root = document.getElementById('login');
+  if (root) {
+    const button = document.getElementById('login-button') as HTMLButtonElement;
+    const account = document.getElementById('account') as HTMLDetailsElement;
+    const avatar = document.getElementById('account-avatar') as HTMLElement;
+    const name = document.getElementById('account-name') as HTMLElement;
+    const logout = document.getElementById('logout-button') as HTMLButtonElement;
+
+    const show = (signedIn: boolean) => {
+      button.hidden = signedIn;
+      account.hidden = !signedIn;
+      if (!signedIn) account.open = false;
+    };
+
+    async function restore() {
+      const token = localStorage.getItem(TOKEN_KEY);
+      if (!token) return show(false);
+      try {
+        const response = await fetch('https://api.github.com/user', {
+          headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json' },
+        });
+        if (response.status === 401) {
+          localStorage.removeItem(TOKEN_KEY);
+          return show(false);
+        }
+        if (!response.ok) return show(false);
+        const user = (await response.json()) as { login: string; avatar_url: string };
+        const image = new Image(28, 28);
+        image.alt = '';
+        image.src = user.avatar_url;
+        avatar.replaceChildren(image);
+        name.textContent = user.login;
+        show(true);
+      } catch {
+        show(false);
+      }
+    }
+
+    button.addEventListener('click', () => {
+      const state = randomState();
+      const returnTo = location.pathname + location.search;
+      sessionStorage.setItem(STATE_KEY, JSON.stringify({ state, returnTo }));
+      location.href = authorizeUrl(root.dataset.clientId!, root.dataset.authUrl!, state);
+    });
+
+    logout.addEventListener('click', () => {
+      localStorage.removeItem(TOKEN_KEY);
+      show(false);
+    });
+
+    restore();
+  }
+</script>
