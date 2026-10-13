@@ -29,6 +29,19 @@ export async function getVersions(): Promise<Version[]> {
   });
 }
 
+export async function getNeighbors(slug: string, lang: string) {
+  const posts = await getPosts();
+  const i = posts.findIndex((p) => p.slug === slug);
+  const pick = (p: Post) => p.versions.find((v) => v.lang === lang) ?? p.primary;
+  const newer = posts[i - 1];
+  const older = posts[i + 1];
+  return {
+    newer: newer && pick(newer),
+    older: older && pick(older),
+    others: posts.filter((_, j) => Math.abs(j - i) > 1).slice(0, 3).map(pick),
+  };
+}
+
 export async function getPosts(): Promise<Post[]> {
   const bySlug = new Map<string, Version[]>();
   for (const v of await getVersions()) {

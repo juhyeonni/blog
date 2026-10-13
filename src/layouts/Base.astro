@@ -1,5 +1,8 @@
 ---
+import 'pretendard-jp/dist/web/variable/pretendardvariable-jp-dynamic-subset.css';
 import '../styles/global.css';
+import { href } from '../lib/posts';
+import { ui } from '../lib/ui';
 
 interface Props {
   title: string;
@@ -7,7 +10,7 @@ interface Props {
 }
 
 const { title, lang = 'ko' } = Astro.props;
-const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+const t = ui(lang);
 ---
 
 <!doctype html>
@@ -16,12 +19,30 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title}</title>
+    <script is:inline>
+      try {
+        var saved = localStorage.getItem('theme');
+        if (saved) document.documentElement.dataset.theme = saved;
+      } catch (e) {}
+    </script>
   </head>
   <body>
-    <a class="skip-link" href="#main">Skip to content</a>
+    <a class="skip-link" href="#main">{t.skip}</a>
     <header class="site-header">
       <div class="wrap">
-        <a class="site-name" href={`${base}/`}>blog</a>
+        <nav aria-label={t.site}>
+          <a class="site-name" href={href('/')}>blog</a>
+          <a class="nav-link" href={href('/posts/')}>{t.posts}</a>
+        </nav>
+        <button id="theme-toggle" class="icon-button" type="button" aria-label={t.theme}>
+          <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <circle cx="12" cy="12" r="4"></circle>
+            <path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4 7 17M17 7l1.4-1.4"></path>
+          </svg>
+          <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5Z"></path>
+          </svg>
+        </button>
       </div>
     </header>
     <main id="main" class="wrap">
@@ -30,5 +51,14 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
     <footer class="site-footer">
       <div class="wrap">© juhyeonni</div>
     </footer>
+    <script is:inline>
+      document.getElementById('theme-toggle').addEventListener('click', function () {
+        var root = document.documentElement;
+        var current = root.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        var next = current === 'dark' ? 'light' : 'dark';
+        root.dataset.theme = next;
+        try { localStorage.setItem('theme', next); } catch (e) {}
+      });
+    </script>
   </body>
 </html>
