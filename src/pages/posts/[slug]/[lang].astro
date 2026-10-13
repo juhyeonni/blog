@@ -1,0 +1,140 @@
+---
+import { render } from 'astro:content';
+import Base from '../../../layouts/Base.astro';
+import {
+  formatDate,
+  getNeighbors,
+  getVersions,
+  languageName,
+  versionHref,
+} from '../../../lib/posts';
+import { ui } from '../../../lib/ui';
+
+export async function getStaticPaths() {
+  const versions = await getVersions();
+  return versions.map((version) => ({
+    params: { slug: version.slug, lang: version.lang },
+    props: {
+      version,
+      siblings: versions.filter((v) => v.slug === version.slug),
+    },
+  }));
+}
+
+const { version, siblings } = Astro.props;
+const { Content, headings } = await render(version);
+const { title, date } = version.data;
+const t = ui(version.lang);
+const { newer, older, others } = await getNeighbors(version.slug, version.lang);
+
+const outline = headings.filter((h) => h.depth === 2 || h.depth === 3);
+const sections = outline.reduce<{ h: (typeof outline)[number]; children: typeof outline }[]>(
+  (acc, h) => {
+    if (h.depth === 2 || acc.length === 0) acc.push({ h, children: [] });
+    else acc[acc.length - 1].children.push(h);
+    return acc;
+  },
+  [],
+);
+---
+
+<Base title={`${title} | blog`} lang={version.lang}>
+  <div class="post-layout">
+    {
+      sections.length > 0 && (
+        <details class="toc" open>
+          <summary>{t.toc}</summary>
+          <nav aria-label={t.toc}>
+            <ol>
+              {sections.map(({ h, children }) => (
+                <li>
+                  <a href={`#${h.slug}`}>{h.text}</a>
+                  {children.length > 0 && (
+                    <ol>
+                      {children.map((c) => (
+                        <li>
+                          <a href={`#${c.slug}`}>{c.text}</a>
+                        </li>
+                      ))}
+                    </ol>
+                  )}
+                </li>
+              ))}
+            </ol>
+          </nav>
+        </details>
+      )
+    }
+    <article class="post">
+      <h1>{title}</h1>
+      <p class="post-meta">
+        <time datetime={date.toISOString()}>{formatDate(date, version.lang)}</time>
+        {
+          siblings.length > 1 && (
+            <span class="langs" role="group" aria-label={t.languages}>
+              {siblings.map((v) =>
+                v.lang === version.lang ? (
+                  <span lang={v.lang} aria-current="true">{languageName(v.lang)}</span>
+                ) : (
+                  <a lang={v.lang} hreflang={v.lang} href={versionHref(v)}>
+                    {languageName(v.lang)}
+                  </a>
+                ),
+              )}
+            </span>
+          )
+        }
+      </p>
+      <div class="prose">
+        <Content />
+      </div>
+
+      {
+        (newer || older) && (
+          <nav class="pager" aria-label={t.pager}>
+            {older && (
+              <a lang={older.lang} href={versionHref(older)}>
+                <small>{t.older}</small>
+                <span>{older.data.title}</span>
+              </a>
+            )}
+            {newer && (
+              <a lang={newer.lang} href={versionHref(newer)}>
+                <small>{t.newer}</small>
+                <span>{newer.data.title}</span>
+              </a>
+            )}
+          </nav>
+        )
+      }
+
+      {
+        others.length > 0 && (
+          <section class="more-posts" aria-labelledby="more-posts-title">
+            <h2 id="more-posts-title">{t.more}</h2>
+            <ul class="post-list">
+              {others.map((v) => (
+                <li>
+                  <a class="post-title" lang={v.lang} href={versionHref(v)}>
+                    {v.data.title}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )
+      }
+    </article>
+  </div>
+
+  <script is:inline>
+    (function () {
+      var toc = document.querySelector('.toc');
+      if (!toc) return;
+      var wide = matchMedia('(min-width: 75rem)');
+      function sync() { toc.open = wide.matches; }
+      sync();
+      wide.addEventListener('change', sync);
+    })();
+  </script>
+</Base>
