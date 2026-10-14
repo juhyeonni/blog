@@ -1,0 +1,44 @@
+---
+import { getCollection, render } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import { aboutHref, aboutLangs } from '../../lib/about';
+import { languageName } from '../../lib/posts';
+import { ui } from '../../lib/ui';
+
+export async function getStaticPaths() {
+  const entries = await getCollection('about');
+  const langs = await aboutLangs();
+  return entries.map((entry) => ({ params: { lang: entry.id }, props: { entry, langs } }));
+}
+
+const { entry, langs } = Astro.props;
+const lang = entry.id;
+const { Content } = await render(entry);
+const t = ui(lang);
+---
+
+<Base title={`${entry.data.title} | blog`} lang={lang}>
+  <article class="post">
+    <h1>{entry.data.title}</h1>
+    {
+      langs.length > 1 && (
+        <p class="post-meta">
+          <span class="langs" role="group" aria-label={t.languages}>
+            {langs.map((other) =>
+              other === lang ? (
+                <span lang={other} aria-current="true">{languageName(other)}</span>
+              ) : (
+                <a lang={other} hreflang={other} href={aboutHref(other)}>
+                  {languageName(other)}
+                </a>
+              ),
+            )}
+          </span>
+        </p>
+      )
+    }
+    <div class="prose">
+      <Content />
+    </div>
+  </article>
+</Base>
