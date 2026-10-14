@@ -34,6 +34,7 @@ const enabled = Boolean(clientId && authUrl);
 
 <script>
   import { STATE_KEY, TOKEN_KEY, authorizeUrl, randomState } from '../lib/auth';
+  import { forgetUser, loadUser } from '../lib/session';
 
   const root = document.getElementById('login');
   if (root) {
@@ -50,27 +51,14 @@ const enabled = Boolean(clientId && authUrl);
     };
 
     async function restore() {
-      const token = localStorage.getItem(TOKEN_KEY);
-      if (!token) return show(false);
-      try {
-        const response = await fetch('https://api.github.com/user', {
-          headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json' },
-        });
-        if (response.status === 401) {
-          localStorage.removeItem(TOKEN_KEY);
-          return show(false);
-        }
-        if (!response.ok) return show(false);
-        const user = (await response.json()) as { login: string; avatar_url: string };
-        const image = new Image(28, 28);
-        image.alt = '';
-        image.src = user.avatar_url;
-        avatar.replaceChildren(image);
-        name.textContent = user.login;
-        show(true);
-      } catch {
-        show(false);
-      }
+      const user = await loadUser();
+      if (!user) return show(false);
+      const image = new Image(28, 28);
+      image.alt = '';
+      image.src = user.avatarUrl;
+      avatar.replaceChildren(image);
+      name.textContent = user.login;
+      show(true);
     }
 
     button.addEventListener('click', () => {
@@ -82,6 +70,7 @@ const enabled = Boolean(clientId && authUrl);
 
     logout.addEventListener('click', () => {
       localStorage.removeItem(TOKEN_KEY);
+      forgetUser();
       show(false);
     });
 

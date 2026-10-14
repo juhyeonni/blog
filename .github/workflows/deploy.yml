@@ -15,10 +15,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+      - name: Make sure every post has a reactions issue
+        env:
+          REACTIONS_REPO: ${{ vars.PUBLIC_REACTIONS_REPO }}
+          REACTIONS_TOKEN: ${{ secrets.REACTIONS_TOKEN }}
+        run: node scripts/ensure-reaction-issues.mjs >> "$GITHUB_ENV"
       - uses: withastro/action@v6
         env:
           PUBLIC_GITHUB_CLIENT_ID: ${{ vars.PUBLIC_GITHUB_CLIENT_ID }}
           PUBLIC_AUTH_URL: ${{ vars.PUBLIC_AUTH_URL }}
+          PUBLIC_REACTIONS_REPO: ${{ vars.PUBLIC_REACTIONS_REPO }}
+          PUBLIC_OWNER_LOGIN: ${{ github.repository_owner }}
 
   deploy:
     needs: build
