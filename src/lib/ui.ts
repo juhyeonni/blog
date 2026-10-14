@@ -2,6 +2,7 @@ const strings = {
   ko: {
     site: '사이트',
     posts: '글',
+    about: '소개',
     skip: '본문으로 건너뛰기',
     theme: '테마 전환',
     toc: '목차',
@@ -44,6 +45,7 @@ const strings = {
   ja: {
     site: 'サイト',
     posts: '記事',
+    about: '自己紹介',
     skip: '本文へ移動',
     theme: 'テーマを切り替え',
     toc: '目次',

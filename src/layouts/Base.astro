@@ -3,6 +3,7 @@ import 'pretendard-jp/dist/web/variable/pretendardvariable-jp-dynamic-subset.css
 import '../styles/global.css';
 import LoginControl from '../components/LoginControl.astro';
 import SearchDialog from '../components/SearchDialog.astro';
+import { aboutLinkFor } from '../lib/about';
 import { href } from '../lib/posts';
 import { ui } from '../lib/ui';
 
@@ -13,6 +14,7 @@ interface Props {
 
 const { title, lang = 'ko' } = Astro.props;
 const t = ui(lang);
+const aboutLink = await aboutLinkFor(lang);
 ---
 
 <!doctype html>
@@ -35,6 +37,7 @@ const t = ui(lang);
         <nav aria-label={t.site}>
           <a class="site-name" href={href('/')}>blog</a>
           <a class="nav-link" href={href('/posts/')}>{t.posts}</a>
+          <a class="nav-link" href={aboutLink}>{t.about}</a>
         </nav>
         <div class="header-actions">
           <button id="search-open" class="icon-button" type="button" aria-label={t.search} aria-keyshortcuts="Control+K Meta+K">
