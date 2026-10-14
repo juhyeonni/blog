@@ -1,0 +1,161 @@
+---
+import { href } from '../lib/posts';
+import { ui } from '../lib/ui';
+
+interface Props {
+  lang: string;
+}
+
+const t = ui(Astro.props.lang);
+const enabled = import.meta.env.PUBLIC_SEMANTIC === '1';
+---
+
+{
+  enabled && (
+    <div
+      id="semantic"
+      class="semantic"
+      data-vectors={href('/embeddings.json')}
+      data-loading={t.semanticLoading}
+      data-failed={t.semanticFailed}
+    >
+      <label class="semantic-switch">
+        <input id="semantic-toggle" type="checkbox" role="switch" />
+        <span>{t.semanticLabel}</span>
+      </label>
+      <div id="semantic-notice" class="semantic-notice" hidden>
+        <p>{t.semanticNotice}</p>
+        <div class="semantic-actions">
+          <button id="semantic-allow" class="text-button" type="button">{t.semanticAllow}</button>
+          <button id="semantic-cancel" class="text-button" type="button">{t.semanticCancel}</button>
+        </div>
+      </div>
+      <p id="semantic-progress" class="search-status" role="status" />
+      <section id="semantic-results" hidden>
+        <h2 class="semantic-heading">{t.semanticHeading}</h2>
+        <ul id="semantic-list" class="semantic-list" />
+      </section>
+      <button id="semantic-clear" class="r-close" type="button" hidden>{t.semanticClear}</button>
+    </div>
+  )
+}
+
+<script>
+  import { deleteModel, loadEmbedder, type Embedder } from '../lib/embedder';
+  import { rank, type EmbeddingsFile } from '../lib/semantic';
+  import type { Entry } from '../lib/search';
+
+  const root = document.getElementById('semantic');
+  const dialog = document.getElementById('search-dialog');
+  if (root && dialog) start(root, dialog);
+
+  function start(root: HTMLElement, dialog: HTMLElement) {
+    const toggle = document.getElementById('semantic-toggle') as HTMLInputElement;
+    const notice = document.getElementById('semantic-notice') as HTMLElement;
+    const progress = document.getElementById('semantic-progress') as HTMLElement;
+    const results = document.getElementById('semantic-results') as HTMLElement;
+    const list = document.getElementById('semantic-list') as HTMLUListElement;
+    const clear = document.getElementById('semantic-clear') as HTMLButtonElement;
+    const CONSENT = 'semantic-consent';
+
+    interface Ready { embedder: Embedder; vectors: EmbeddingsFile }
+    let ready: Promise<Ready> | null = null;
+    let last: { query: string; shown: string[]; index: Entry[] | null } | null = null;
+    let timer: number | undefined;
+
+    const consented = () => localStorage.getItem(CONSENT) === '1';
+
+    function load(): Promise<Ready> {
+      ready ??= (async () => {
+        const [embedder, vectors] = await Promise.all([
+          loadEmbedder((percent) => {
+            progress.textContent = root.dataset.loading!.replace('{n}', String(percent));
+          }),
+          fetch(root.dataset.vectors!).then((r) => r.json() as Promise<EmbeddingsFile>),
+        ]);
+        progress.textContent = '';
+        return { embedder, vectors };
+      })().catch((error) => {
+        ready = null;
+        progress.textContent = root.dataset.failed!;
+        throw error;
+      });
+      return ready;
+    }
+
+    function hide() {
+      results.hidden = true;
+      list.replaceChildren();
+    }
+
+    async function update() {
+      const snapshot = last;
+      if (!toggle.checked || !snapshot?.index || !snapshot.query.trim()) return hide();
+      try {
+        const { embedder, vectors } = await load();
+        const vector = await embedder(snapshot.query);
+        if (last !== snapshot) return;
+
+        const matches = rank(vector, vectors, new Set(snapshot.shown));
+        list.replaceChildren();
+        for (const match of matches) {
+          const entry = snapshot.index.find((e) => e.slug === match.slug && e.lang === match.lang);
+          if (!entry) continue;
+          const item = document.createElement('li');
+          const link = document.createElement('a');
+          link.href = entry.url;
+          link.lang = entry.lang;
+          link.textContent = entry.title;
+          item.append(link);
+          list.append(item);
+        }
+        results.hidden = list.children.length === 0;
+      } catch {
+        hide();
+      }
+    }
+
+    function schedule() {
+      clearTimeout(timer);
+      timer = window.setTimeout(update, 250);
+    }
+
+    function setOn(on: boolean) {
+      localStorage.setItem(CONSENT, on ? '1' : '0');
+      toggle.checked = on;
+      clear.hidden = !on;
+      if (on) {
+        load().then(update, () => {});
+      } else {
+        hide();
+        progress.textContent = '';
+      }
+    }
+
+    toggle.checked = consented();
+    clear.hidden = !toggle.checked;
+
+    toggle.addEventListener('change', () => {
+      if (!toggle.checked) return setOn(false);
+      toggle.checked = false;
+      notice.hidden = false;
+    });
+    document.getElementById('semantic-allow')!.addEventListener('click', () => {
+      notice.hidden = true;
+      setOn(true);
+    });
+    document.getElementById('semantic-cancel')!.addEventListener('click', () => {
+      notice.hidden = true;
+    });
+    clear.addEventListener('click', async () => {
+      await deleteModel();
+      ready = null;
+      setOn(false);
+    });
+
+    dialog.addEventListener('search:render', (event) => {
+      last = (event as CustomEvent).detail;
+      schedule();
+    });
+  }
+</script>

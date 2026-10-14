@@ -6,10 +6,13 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "test": "node --test \"src/**/*.test.ts\" \"worker/**/*.test.ts\" \"scripts/**/*.test.mjs\""
+    "test": "node --test \"src/**/*.test.ts\" \"worker/**/*.test.ts\" \"scripts/**/*.test.mjs\"",
+    "embeddings": "node scripts/build-embeddings.mjs"
   },
   "dependencies": {
+    "@huggingface/transformers": "^4.3.1",
     "astro": "^7.3.8",
+    "onnxruntime-web": "1.31.0-dev.20260914-8d85527a0",
     "pretendard-jp": "^1.3.9"
   }
 }

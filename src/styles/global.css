@@ -758,6 +758,74 @@ p {
   margin: 0;
 }
 
+.semantic {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--border);
+}
+
+.semantic-switch {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--step--1);
+  cursor: pointer;
+}
+
+.semantic-switch input {
+  width: 1.1rem;
+  height: 1.1rem;
+  accent-color: var(--accent);
+}
+
+.semantic-notice {
+  padding: var(--space-3);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: var(--step--1);
+  line-height: 1.5;
+}
+
+.semantic-notice p {
+  margin: 0 0 var(--space-2);
+}
+
+.semantic-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.semantic-heading {
+  margin: 0 0 var(--space-1);
+  color: var(--text-muted);
+  font-size: var(--step--1);
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+.semantic-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.semantic-list a {
+  display: block;
+  padding: var(--space-2) var(--space-3);
+  color: var(--text);
+  text-decoration: none;
+  border-radius: var(--radius);
+}
+
+.semantic-list a:hover {
+  background: var(--surface);
+}
+
 .search-status:empty {
   display: none;
 }

@@ -15,11 +15,27 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
       - name: Make sure every post has a reactions issue
         env:
           REACTIONS_REPO: ${{ vars.PUBLIC_REACTIONS_REPO }}
           REACTIONS_TOKEN: ${{ secrets.REACTIONS_TOKEN }}
         run: node scripts/ensure-reaction-issues.mjs >> "$GITHUB_ENV"
+      - name: Keep the search model between runs
+        uses: actions/cache@v4
+        with:
+          path: .cache/transformers
+          key: transformers-multilingual-e5-small-v1
+      - run: npm ci
+      - name: Build the meaning-search vectors
+        id: embeddings
+        continue-on-error: true
+        run: npm run embeddings
+      - name: Announce the vectors to the build
+        if: steps.embeddings.outcome == 'success'
+        run: echo "PUBLIC_SEMANTIC=1" >> "$GITHUB_ENV"
       - uses: withastro/action@v6
         env:
           PUBLIC_GITHUB_CLIENT_ID: ${{ vars.PUBLIC_GITHUB_CLIENT_ID }}
