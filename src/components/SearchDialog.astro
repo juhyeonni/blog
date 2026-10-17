@@ -8,6 +8,7 @@ interface Props {
 }
 
 const t = ui(Astro.props.lang);
+const semantic = import.meta.env.PUBLIC_SEMANTIC === '1';
 ---
 
 <dialog
@@ -17,18 +18,31 @@ const t = ui(Astro.props.lang);
   data-index={href('/search.json')}
   data-empty={t.searchEmpty}
 >
-  <input
-    id="search-input"
-    type="search"
-    role="combobox"
-    aria-expanded="false"
-    aria-controls="search-results"
-    aria-autocomplete="list"
-    aria-label={t.search}
-    placeholder={t.searchPlaceholder}
-    autocomplete="off"
-    spellcheck="false"
-  />
+  <div class="search-field">
+    <input
+      id="search-input"
+      type="search"
+      role="combobox"
+      aria-expanded="false"
+      aria-controls="search-results"
+      aria-autocomplete="list"
+      aria-label={t.search}
+      placeholder={t.searchPlaceholder}
+      autocomplete="off"
+      spellcheck="false"
+    />
+    {
+      semantic && (
+        <label class="semantic-switch">
+          <input id="semantic-toggle" type="checkbox" role="switch" />
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8Z"></path>
+          </svg>
+          <span>{t.semanticLabel}</span>
+        </label>
+      )
+    }
+  </div>
   <ul id="search-results" role="listbox" aria-label={t.search}></ul>
   <p id="search-status" class="search-status" role="status"></p>
   <SemanticSearch lang={Astro.props.lang} />

@@ -10,9 +10,10 @@ import { ui } from '../lib/ui';
 interface Props {
   title: string;
   lang?: string;
+  crumbs?: { label: string; href?: string }[];
 }
 
-const { title, lang = 'ko' } = Astro.props;
+const { title, lang = 'ko', crumbs = [] } = Astro.props;
 const t = ui(lang);
 const aboutLink = await aboutLinkFor(lang);
 ---
@@ -60,6 +61,22 @@ const aboutLink = await aboutLinkFor(lang);
       </div>
     </header>
     <main id="main" class="wrap">
+      {
+        crumbs.length > 0 && (
+          <div class="crumbs">
+            <a class="back" href={crumbs.findLast((c) => c.href)?.href ?? href('/')}>
+              <span aria-hidden="true">←</span> {t.back}
+            </a>
+            <nav aria-label={t.crumbs}>
+              <ol>
+                {[{ label: t.home, href: href('/') }, ...crumbs].map((c) => (
+                  <li>{c.href ? <a href={c.href}>{c.label}</a> : <span aria-current="page">{c.label}</span>}</li>
+                ))}
+              </ol>
+            </nav>
+          </div>
+        )
+      }
       <slot />
     </main>
     <footer class="site-footer">

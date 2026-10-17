@@ -19,10 +19,6 @@ const enabled = import.meta.env.PUBLIC_SEMANTIC === '1';
       data-loading={t.semanticLoading}
       data-failed={t.semanticFailed}
     >
-      <label class="semantic-switch">
-        <input id="semantic-toggle" type="checkbox" role="switch" />
-        <span>{t.semanticLabel}</span>
-      </label>
       <div id="semantic-notice" class="semantic-notice" hidden>
         <p>{t.semanticNotice}</p>
         <div class="semantic-actions">
