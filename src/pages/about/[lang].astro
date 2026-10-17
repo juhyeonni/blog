@@ -17,7 +17,7 @@ const { Content } = await render(entry);
 const t = ui(lang);
 ---
 
-<Base title={`${entry.data.title} | blog`} lang={lang}>
+<Base title={`${entry.data.title} | blog`} lang={lang} crumbs={[{ label: entry.data.title }]}>
   <article class="post">
     <h1>{entry.data.title}</h1>
     {

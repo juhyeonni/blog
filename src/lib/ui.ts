@@ -1,6 +1,12 @@
 const strings = {
   ko: {
     site: '사이트',
+    home: '홈',
+    back: '뒤로',
+    crumbs: '현재 위치',
+    readTime: '약 {n}분',
+    reactAll: '모든 반응',
+    reactJump: '해당 문단으로 이동',
     posts: '글',
     about: '소개',
     skip: '본문으로 건너뛰기',
@@ -32,18 +38,24 @@ const strings = {
     reactClose: '닫기',
     reactLogin: 'GitHub으로 로그인하면 반응을 남길 수 있어요.',
     reactFailed: '저장하지 못했어요. 다시 시도해 주세요.',
-    semanticLabel: '의미로 찾기 (선택)',
+    semanticLabel: '의미 검색',
     semanticNotice:
-      '의미로 찾기는 약 132MB를 내려받아 이 기기에서 실행해요. 모델(118MB)은 Hugging Face에서, 실행 엔진(14MB)은 이 사이트에서 받고, 둘 다 브라우저에 저장돼요.',
+      '의미 검색은 약 132MB를 내려받아 이 기기에서 실행해요. 모델(118MB)은 Hugging Face에서, 실행 엔진(14MB)은 이 사이트에서 받고, 둘 다 브라우저에 저장돼요.',
     semanticAllow: '허락하고 켜기',
     semanticCancel: '취소',
     semanticHeading: '의미가 비슷한 글',
     semanticClear: '내려받은 모델 지우기',
     semanticLoading: '내려받는 중… {n}%',
-    semanticFailed: '의미로 찾기를 켜지 못했어요.',
+    semanticFailed: '의미 검색을 켜지 못했어요.',
   },
   ja: {
     site: 'サイト',
+    home: 'ホーム',
+    back: '戻る',
+    crumbs: '現在地',
+    readTime: '約{n}分',
+    reactAll: 'すべてのリアクション',
+    reactJump: 'この段落へ移動',
     posts: '記事',
     about: '自己紹介',
     skip: '本文へ移動',
@@ -75,19 +87,19 @@ const strings = {
     reactClose: '閉じる',
     reactLogin: 'GitHubでログインするとリアクションを残せます。',
     reactFailed: '保存できませんでした。もう一度お試しください。',
-    semanticLabel: '意味で探す（任意）',
+    semanticLabel: '意味検索',
     semanticNotice:
-      '意味で探すには約132MBをダウンロードし、この端末で実行します。モデル（118MB）はHugging Faceから、実行エンジン（14MB）はこのサイトから取得し、どちらもブラウザに保存されます。',
+      '意味検索には約132MBをダウンロードし、この端末で実行します。モデル（118MB）はHugging Faceから、実行エンジン（14MB）はこのサイトから取得し、どちらもブラウザに保存されます。',
     semanticAllow: '許可してオンにする',
     semanticCancel: 'キャンセル',
     semanticHeading: '意味が近い記事',
     semanticClear: 'ダウンロードしたモデルを削除',
     semanticLoading: 'ダウンロード中… {n}%',
-    semanticFailed: '意味で探す機能をオンにできませんでした。',
+    semanticFailed: '意味検索をオンにできませんでした。',
   },
-} as const;
+};
 
-export type UiStrings = (typeof strings)['ko'];
+export type UiStrings = Record<keyof (typeof strings)['ko'], string>;
 
 export const ui = (lang: string): UiStrings =>
   strings[lang as keyof typeof strings] ?? strings.ko;

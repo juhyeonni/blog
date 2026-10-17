@@ -1,11 +1,13 @@
 ---
 import Base from '../../layouts/Base.astro';
+import { readingMinutes } from '../../lib/readtime';
+import { ui } from '../../lib/ui';
 import { formatDate, getPosts, languageName, versionHref } from '../../lib/posts';
 
 const posts = await getPosts();
 ---
 
-<Base title="글 목록 | blog">
+<Base title="글 목록 | blog" crumbs={[{ label: ui('ko').posts }]}>
   <h1>글 목록</h1>
   <ul class="post-list">
     {
@@ -18,6 +20,7 @@ const posts = await getPosts();
             <time datetime={primary.data.date.toISOString()}>
               {formatDate(primary.data.date, primary.lang)}
             </time>
+            <span>{ui(primary.lang).readTime.replace('{n}', String(readingMinutes(primary.body ?? '')))}</span>
             <span class="langs">
               {versions.map((v) => (
                 <a lang={v.lang} href={versionHref(v)}>

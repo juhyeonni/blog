@@ -22,8 +22,14 @@ const t = ui(Astro.props.lang);
   data-login={t.reactLogin}
   data-failed={t.reactFailed}
   data-login-button={t.loginWithGitHub}
+  data-jump={t.reactJump}
 >
 </div>
+
+<section id="r-all" class="r-all" aria-labelledby="r-all-title" hidden>
+  <h2 id="r-all-title">{t.reactAll}</h2>
+  <ul id="r-all-list" class="r-all-list"></ul>
+</section>
 
 <script>
   import { MAX_TEXT, blockHash, canDelete, encode, groupByBlock, parse, type Reaction } from '../lib/reactions';
@@ -33,6 +39,8 @@ const t = ui(Astro.props.lang);
   const prose = article?.querySelector<HTMLElement>('.prose');
   const s = document.getElementById('reactions-i18n')?.dataset;
   if (article && prose && s) start(article, prose, s);
+
+  const MAX_FACES = 3;
 
   function el<K extends keyof HTMLElementTagNameMap>(tag: K, className = '', text = ''): HTMLElementTagNameMap[K] {
     const node = document.createElement(tag);
@@ -51,6 +59,7 @@ const t = ui(Astro.props.lang);
     const blocks = [...prose.querySelectorAll<HTMLElement>('p, li, h2, h3, blockquote')].filter(
       (node) => !node.querySelector('p, li, ul, ol, pre, blockquote'),
     );
+    const texts = blocks.map((node) => (node.textContent ?? '').replace(/\s+/g, ' ').trim());
     const anchors = blocks.map((node, block) => ({ block, hash: blockHash(node.textContent ?? '') }));
 
     let reactions: Reaction[] = [];
@@ -79,14 +88,57 @@ const t = ui(Astro.props.lang);
       counts.push(count);
     });
 
+    const allSection = document.getElementById('r-all')!;
+    const allList = document.getElementById('r-all-list')!;
+
+    function avatarImage(reaction: Reaction): HTMLImageElement {
+      const image = new Image(20, 20);
+      image.alt = '';
+      image.src = reaction.avatar;
+      return image;
+    }
+
+    function fillCount(button: HTMLButtonElement, items: Reaction[]) {
+      const people = [...new Map(items.map((r) => [r.login.toLowerCase(), r])).values()];
+      const faces = people.slice(0, MAX_FACES).map((r) =>
+        r.avatar ? avatarImage(r) : el('span', 'r-face', r.login.slice(0, 1).toUpperCase()),
+      );
+      const extra = items.length - faces.length;
+      button.replaceChildren(...faces, ...(extra > 0 ? [el('span', 'r-more', `+${extra}`)] : []));
+    }
+
+    function renderAll(grouped: Map<number, Reaction[]>) {
+      const rows = [...grouped].sort(([a], [b]) => a - b).flatMap(([index, items]) =>
+        items.map((reaction) => {
+          const row = el('li');
+          const button = el('button', 'r-all-item');
+          button.type = 'button';
+          button.title = s.jump!;
+          const who = el('span', 'r-all-who');
+          if (reaction.avatar) who.append(avatarImage(reaction));
+          who.append(el('b', '', reaction.login), document.createTextNode(` ${reaction.text}`));
+          button.append(who, el('span', 'r-all-quote', texts[index]));
+          button.addEventListener('click', () => {
+            blocks[index].scrollIntoView({ block: 'center', behavior: 'smooth' });
+            openPanel(index, button);
+          });
+          row.append(button);
+          return row;
+        }),
+      );
+      allList.replaceChildren(...rows);
+      allSection.hidden = rows.length === 0;
+    }
+
     function render() {
       const grouped = groupByBlock(reactions, lang, anchors);
       blocks.forEach((node, i) => {
-        const n = grouped.get(i)?.length ?? 0;
-        node.classList.toggle('reacted', n > 0);
-        counts[i].hidden = n === 0;
-        counts[i].textContent = String(n);
+        const items = grouped.get(i) ?? [];
+        node.classList.toggle('reacted', items.length > 0);
+        counts[i].hidden = items.length === 0;
+        if (items.length > 0) fillCount(counts[i], items);
       });
+      renderAll(grouped);
     }
 
     function authHeaders(): HeadersInit {
@@ -129,12 +181,7 @@ const t = ui(Astro.props.lang);
       const items = groupByBlock(reactions, lang, anchors).get(index) ?? [];
       for (const reaction of items) {
         const row = el('li', 'r-item');
-        if (reaction.avatar) {
-          const image = new Image(20, 20);
-          image.alt = '';
-          image.src = reaction.avatar;
-          row.append(image);
-        }
+        if (reaction.avatar) row.append(avatarImage(reaction));
         const body = el('span', 'r-body');
         body.append(el('b', '', reaction.login), document.createTextNode(` ${reaction.text}`));
         row.append(body);
@@ -218,7 +265,7 @@ const t = ui(Astro.props.lang);
     });
     document.addEventListener('click', (event) => {
       const target = event.target as Node;
-      const inside = panel.contains(target) || (target as HTMLElement).closest?.('.r-add, .r-count');
+      const inside = panel.contains(target) || (target as HTMLElement).closest?.('.r-add, .r-count, .r-all-item');
       if (current !== null && !inside) {
         panel.hidden = true;
         current = null;

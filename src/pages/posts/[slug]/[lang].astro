@@ -5,10 +5,12 @@ import {
   formatDate,
   getNeighbors,
   getVersions,
+  href,
   languageName,
   versionHref,
 } from '../../../lib/posts';
 import Reactions from '../../../components/Reactions.astro';
+import { readingMinutes } from '../../../lib/readtime';
 import { ui } from '../../../lib/ui';
 
 export async function getStaticPaths() {
@@ -43,7 +45,11 @@ const sections = outline.reduce<{ h: (typeof outline)[number]; children: typeof 
 );
 ---
 
-<Base title={`${title} | blog`} lang={version.lang}>
+<Base
+  title={`${title} | blog`}
+  lang={version.lang}
+  crumbs={[{ label: t.posts, href: href('/posts/') }, { label: title }]}
+>
   <div class="post-layout">
     {
       sections.length > 0 && (
@@ -80,6 +86,7 @@ const sections = outline.reduce<{ h: (typeof outline)[number]; children: typeof 
       <h1>{title}</h1>
       <p class="post-meta">
         <time datetime={date.toISOString()}>{formatDate(date, version.lang)}</time>
+        <span>{t.readTime.replace('{n}', String(readingMinutes(version.body ?? '')))}</span>
         {
           siblings.length > 1 && (
             <span class="langs" role="group" aria-label={t.languages}>
